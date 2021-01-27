@@ -2,7 +2,6 @@ import operator as op
 import numpy as np
 
 tuplefy=lambda x:x if isinstance(x,tuple) else (x,)
-identity=lambda x:x
 
 def evaluate(it,opers,prs,p_rpr=0):
     if not p_rpr:
@@ -32,7 +31,7 @@ def evaluate(it,opers,prs,p_rpr=0):
             if operands: op="*"
         else: pr=op
         lpr,rpr=prs[pr]
-        operator=opers.get(op,identity)
+        operator=opers.get(op,lambda x:x)
         if 0<lpr<=p_rpr: break
         if rpr:
             right,ch=evaluate(it,opers,prs,rpr)
