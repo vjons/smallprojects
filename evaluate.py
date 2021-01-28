@@ -4,6 +4,7 @@ from sympy import symbols,lambdify
 from sympy.core.expr import Expr
 
 tuplefy=lambda x:x if isinstance(x,tuple) else (x,)
+extend = lambda x,y: tuplefy(x)+tuplefy(y)
 
 def to_number(expr):
     x=expr.replace('.','',1)
@@ -17,9 +18,14 @@ def to_number(expr):
 def to_func(res):
     return lambdify(res.free_symbols,res)
 
-def evaluate(it,opers,prs,p_rpr=0,**variables):
+def evaluate(it,opers,prs={},p_rpr=0,**variables):
     if not p_rpr:
-        prs.update({" ":(0,0),"(":(0,1),")":(1,0),",":(1.5,1.6),"\n":(1,0)})
+        opers.update({",":extend})
+        if isinstance(prs,str):
+            prs={k:(2*n,2*n+1) for n,k in enumerate(prs[::-1],start=1)}
+        elif isinstance(prs,tuple):
+            prs={k:(2,3) if prs[0]=="L" else (3,2) for k in prs[1]}
+        prs.update({" ":(0,0),"(":(0,1),")":(1,0),",":(1.01,1.02)})
         prs.update({k:(0,100) for k in set(opers)-set(prs) if callable(opers[k])})
     it=iter(it)
     operator=None
@@ -63,9 +69,8 @@ if __name__=="__main__":
     t_func = lambda x,y,z:x*y**2+z
     factorial = lambda n: 1 if not n else n*factorial(n-1)
     to_array =lambda *x:np.array(x)
-    extend = lambda x,y: tuplefy(x)+tuplefy(y)
 
-    operators={"[":to_array,          ",":extend,"!":factorial,
+    operators={"[":to_array,"!":factorial,
           "+_":op.pos,"+":op.add,"-_":op.neg,"-":op.sub,
           "*":op.mul,"/":op.truediv,"^":op.pow,"add":op.add,
           "sin":np.sin,"cos":np.cos,"ln":np.log,"t_func":t_func,
@@ -87,12 +92,12 @@ if __name__=="__main__":
     expr="3+4*2+5+func 4 + c+x"#x if a variable
     opers={"*":op.mul,"+":op.add,"func": lambda x:x**2,"c":20}
 
-    print(f"mul before add: {expr} = ",evaluate(expr,opers,x=4,prs={"+":(2,3),"*":(4,5)}))
+    print(f"mul before add: {expr} = ",evaluate(expr,opers,x=4,prs="*+"))
 
-    print(f"add before mul: {expr} = ",evaluate(expr,opers,x=5,prs={"*":(2,3),"+":(4,5)}))
+    print(f"add before mul: {expr} = ",evaluate(expr,opers,x=5,prs="+*"))
 
-    print(f"left before right: {expr} = ",evaluate(expr,opers,x=6,prs={"*":(2,3),"+":(2,3)}))
+    print(f"left before right: {expr} = ",evaluate(expr,opers,x=5,prs=("L","+*")))
 
-    print(f"right before left: {expr} = ",evaluate(expr,opers,prs={"*":(3,2),"+":(3,2)}))
+    print(f"right before left: {expr} = ",evaluate(expr,opers,x=5,prs=("R","+*")))
 
     #In the last example you get a function by using the to_func method which can be evaluated fast later
