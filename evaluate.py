@@ -8,12 +8,15 @@ extend = lambda x,y: tuplefy(x)+tuplefy(y)
 
 def to_number(expr):
     x=expr.replace('.','',1)
-    if x.isdigit():
+    if expr.isdigit():
+        return int(expr)
+    elif x.isdigit():
         return float(expr)
     elif x[:-1].isdigit():
         return complex(expr) 
     else:
-        return False
+        return None
+# P9G84XA
 
 def to_func(res):
     return lambdify(res.free_symbols,res)
@@ -21,7 +24,7 @@ def to_func(res):
 std_opers={"+_":op.pos,"+":op.add,"-_":op.neg,"-":op.sub,"*":op.mul,"/":op.truediv,"^":op.pow}
 std_precs={"+_":(0,12),"+":(4,5),"-_":(0,13),"-":(6,7),"*":(8,9),"/":(10,11),"^":(15,14)}
 
-def evaluate(expr,opers=std_opers,precs=std_precs,trans=to_number,_p_rpr=0):
+def evaluate(expr,opers=std_opers,precs=std_precs,conv=to_number):
     """
     Evaluate is a function that evaluates an expression using user defined operators
     and operator precedence. Uses sympy to handle variables. 
@@ -34,7 +37,7 @@ def evaluate(expr,opers=std_opers,precs=std_precs,trans=to_number,_p_rpr=0):
         precs: dict[str,(Number,Number)], default = std_precs
             Defining the left and right operator precedence in evaluation.
             For unitary operators precedence right or left should be set to 0
-        trans: function[str] -> Object or Bool, default = to_number
+        conv: function[str] -> Object or Bool, default = to_number
             Function that evaluates atomic expressions within expr returns False if variable
 
     Returns:
@@ -63,25 +66,25 @@ def evaluate(expr,opers=std_opers,precs=std_precs,trans=to_number,_p_rpr=0):
     prs.update({" ":(0,0),"(":(0,1),")":(1,0),",":(1.001,1.002)})
     prs.update({k:(0,100) for k in set(ops)-set(prs) if callable(ops[k])})
 
-    return _eval(iter(expr),ops,prs,trans,0)[0]
+    return _eval(iter(expr),ops,prs,conv,0)[0]
 
 
-def _eval(it,opers,precs,trans,p_rpr):
+def _eval(it,opers,precs,conv,p_rpr):
     operator=None
     operands=()
     will={}
     pr="("
     while pr!=")":
         expr=""
-        while will.pop("it",True) and (ch:=next(it,")")) not in precs or ch.rstrip(" "):
+        while will.pop("it",True) and (ch:=next(it,")")) not in precs:
             expr+=ch
             continue
 
         if expr and not expr in precs:
-            value=opers.get(expr) or trans(expr) or symbols(expr)
+            value=opers.get(expr) or conv(expr) or symbols(expr)
             operands+=tuplefy(value)
 
-        if expr in precs and expr.strip(): op=expr
+        if expr in precs and expr!="(": op=expr
         elif ch.strip(): op=ch
         else: continue
         if op+"_" in opers and not operands: op+="_"
@@ -93,7 +96,7 @@ def _eval(it,opers,precs,trans,p_rpr):
         operator=opers.get(op,lambda x:x)
         if 0<lpr<=p_rpr: break
         if rpr:
-            right,ch=_eval(it,opers,precs,trans,rpr)
+            right,ch=_eval(it,opers,precs,conv,rpr)
             will["it"]=rpr==1
             operands+=tuplefy(right)
 
