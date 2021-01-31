@@ -7,10 +7,10 @@ tuplefy=lambda x:x if isinstance(x,tuple) else (x,)
 extend = lambda x,y: tuplefy(x)+tuplefy(y)
 
 def to_number(expr):
-    x=expr.replace('.','',1)
     if expr.isdigit():
         return int(expr)
-    elif x.isdigit():
+    x=expr.replace('.','',1)
+    if x.isdigit():
         return float(expr)
     elif x[:-1].isdigit():
         return complex(expr) 
