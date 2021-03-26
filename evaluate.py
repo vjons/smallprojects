@@ -16,7 +16,6 @@ def to_number(expr):
         return complex(expr) 
     else:
         return None
-# P9G84XA
 
 def to_func(res):
     return lambdify(res.free_symbols,res)
